@@ -1,64 +1,123 @@
-# QuickOrder
+# QuickOrder: Voice-Native Coffee Shop Ordering Assistant
 
-QuickOrder is a voice-native coffee shop ordering assistant built to make one hard voice problem measurable: **perceived response time**. The app measures Time-To-First-Audio (TTFA), from the moment the customer releases the talk button to the moment audio starts playing.
+QuickOrder is a voice-native ordering assistant designed to solve and measure one of the hardest challenges in conversational AI: **perceived response time / Time-To-First-Audio (TTFA)**.
 
-## What it compares
+---
 
-- **Baseline** — waits for the full Gemini response, then sends the full text to Rime TTS.
-- **Optimized (streaming)** — streams Gemini tokens, detects complete sentences, starts a Rime request for each sentence immediately, and writes the resulting audio to the client in the original sentence order.
+## 🎯 Product, Target User, and Problem
 
-The browser consumes the `audio/mpeg` response as a `ReadableStream` through MediaSource Extensions. The first `play` event is the client-side t1 measurement. The server also records the first Rime byte written to the response at `GET /api/metrics`.
+- **Product**: QuickOrder Voice Assistant (DataForge 2026 Prototype).
+- **Target User**: Coffee shop customers placing spoken orders, and voice AI engineers benchmarking real-time conversational streaming latency.
+- **Problem Solved**: Standard voice AI systems generate the entire LLM response before sending text to Text-to-Speech (TTS). For detailed responses, this creates a 2–5 second delay where the user hears uncomfortable silence. QuickOrder eliminates this delay by streaming LLM tokens, extracting complete sentences on the fly, and synthesizing TTS audio concurrently.
 
-## Run it
+---
 
-1. Add `GEMINI_API_KEY` and `RIME_API_KEY` to Replit Secrets. Do not put real keys in `.env` or source control.
-2. Install dependencies:
+## ⚡ The Hard Voice Problem: Perceived Response Time (TTFA)
 
-   ```bash
-   npm install
-   ```
+Time-To-First-Audio (TTFA) is measured from the exact millisecond the user finishes speaking (releases the talk button) to the exact millisecond audio output starts playing through the speaker (`play` event).
 
-3. Start the app:
+### What it Compares:
+1. **Baseline**: Waits for the full Gemini response to finish generating, then sends the complete text payload to Rime TTS.
+2. **Optimized (Streaming)**: Streams Gemini tokens, detects sentence boundaries (`[.!?]`) in real-time, immediately triggers Rime TTS synthesis for each sentence concurrently, and streams audio bytes to the browser ordered via MediaSource Extensions (MSE).
 
-   ```bash
-   npm start
-   ```
+---
 
-4. Open the preview in Chrome. Hold the talk button while speaking, or type an order in the fallback text field.
+## 🏗️ Architecture: How the Pieces Connect
 
-The server listens on `0.0.0.0:5000` in Replit. `GET /api/health` shows whether both provider keys are available.
+```mermaid
+flowchart LR
+    A["Browser SpeechRecognition (STT)"] -->|POST /api/order| B["Express Server"]
+    B -->|Streaming generateContentStream| C["Gemini 3.5 Flash Lite"]
+    C -->|Token Stream| D["Sentence Extractor (Regex)"]
+    D -->|Concurrent Sentence Requests| E["Rime TTS API"]
+    E -->|audio/mpeg Streams| B
+    B -->|HTTP Audio Stream| F["Browser Playback (MSE ReadableStream)"]
+```
 
-## Rime configuration
+1. **Client STT**: Web Speech API captures speech and sends transcript to `/api/order`.
+2. **LLM Generation**: Express server invokes `@google/genai` `generateContentStream`.
+3. **Sentence Chunking**: Buffer collects tokens and extracts complete sentences on boundary regex `[\s\S]*?[.!?](?=\s|$)`.
+4. **Concurrent TTS**: Each extracted sentence immediately initiates a `POST https://users.rime.ai/v1/rime-tts` request.
+5. **Ordered Audio Streaming**: Audio bytes are piped to client response headers (`Content-Type: audio/mpeg`).
+6. **MSE Playback**: Browser consumes chunked audio with `ReadableStream` & MediaSource Extensions for immediate playback.
 
-QuickOrder uses the live Rime HTTP streaming endpoint:
+---
 
-- Endpoint: `POST https://users.rime.ai/v1/rime-tts`
-- Model: `mistv2`
-- Voice: `astra`
-- Language: `eng`
-- Output: `audio/mpeg`
-- Sampling rate: `22050`
-- Speed alpha: `1.0`
+## 🎙️ Rime Configuration
 
-Gemini uses the official `@google/genai` Node SDK with streaming `generateContentStream` and model `gemini-2.5-flash`.
+QuickOrder uses the live Rime HTTP streaming synthesis endpoint:
 
-## Acceptance test
+- **Endpoint**: `POST https://users.rime.ai/v1/rime-tts`
+- **Model**: `mistv2`
+- **Speaker / Voice**: `astra`
+- **Language**: `eng`
+- **Output Format**: `audio/mpeg`
+- **Transport**: HTTP Streaming (`Accept: audio/mpeg`)
+- **Sampling Rate**: `22050` Hz
+- **Speed Alpha**: `1.0`
 
-1. Run the **stress test** button. It sends “Tell me your full menu and today's specials in detail, plus your allergen policy” through Baseline and Optimized, back-to-back.
-2. Confirm both rows appear in the experiment log.
-3. Compare the two TTFA values and the average bars. Optimized should begin playing near the first sentence's synthesis time while Baseline waits on the full response.
-4. For a cross-check, inspect `GET /api/metrics`, which includes `t_request_received` and `t_first_rime_byte_sent_to_client` for every completed request.
+---
 
-## What's live vs. simulated
+## 🚀 Setup & Running Instructions
 
-Everything in this experiment is live: Gemini generation, Rime synthesis, HTTP audio streaming, browser playback, and timing. There is no precomputed audio or fake latency.
+### 1. Requirements
+- Node.js v20.6.0+ (Tested on Node.js v24)
+- Gemini API Key ([Google AI Studio](https://aistudio.google.com/))
+- Rime API Key ([Rime AI Dashboard](https://rime.ai/))
 
-## Known limitations
+### 2. Configure Environment Variables
+Create a `.env` file in the root directory (copied from `.env.example`):
+```env
+GEMINI_API_KEY=your_gemini_api_key_here
+RIME_API_KEY=your_rime_api_key_here
+```
 
-- Browser SpeechRecognition is primarily supported by Chrome and Chromium-based browsers.
-- MP3 streaming playback uses MediaSource Extensions when supported; browsers without `audio/mpeg` MSE support use a full-download playback fallback.
-- The server keeps metrics in memory and is intended for one concurrent experimenter.
-- Network conditions, provider load, browser buffering, and Gemini time-to-first-token all affect measured results.
-- This is a measurement demo, not a payment flow or telephony integration.
+### 3. Install Dependencies
+```bash
+npm install --no-package-lock
+```
 
-- ##Made for DataForge 2026
+### 4. Start the Application
+```bash
+npm start
+```
+The server will start listening at `http://localhost:5000`.
+
+### 5. Accessing the Web App
+Open `http://localhost:5000` in Google Chrome. Use the **Hold to Speak** button or fallback text input field to submit an order.
+
+---
+
+## 🧪 Acceptance Test Procedure
+
+1. Click the **Run Stress Test** button on the UI.
+2. The benchmark sends a long prompt (*"Tell me your full menu and today's specials in detail, plus your allergen policy"*) through **Baseline** and **Optimized** modes back-to-back.
+3. Observe the live TTFA comparison table and visual latency bar graphs.
+4. Verify backend server metrics at `GET http://localhost:5000/api/metrics`.
+
+---
+
+## 🔴 Live vs. Simulated
+
+**100% Live**: Every component in this application is live.
+- Real-time Gemini stream generation.
+- Real-time Rime HTTP streaming audio synthesis.
+- Real-time browser audio decoding & playback timing.
+- No precomputed audio files, cached responses, or artificial delays are used.
+
+---
+
+## ⚠️ Known Limitations
+
+- **Browser Support**: Web Speech API (`SpeechRecognition`) requires Chrome or Chromium-based browsers.
+- **Single Concurrent User**: Server metrics are collected in-memory for single-session experiments.
+- **Latency Floor**: Gemini Time-To-First-Token (TTFT) and the duration of the first complete sentence define the absolute lower bound of TTFA.
+- **No Telephony/Payments**: Demo focuses strictly on measuring voice streaming latency.
+
+---
+
+## 📜 Credits & License
+
+- Built for **DataForge 2026**.
+- Powered by Google Gemini (`@google/genai`), Rime TTS (`mistv2`), and Express.js.
+- License: MIT
