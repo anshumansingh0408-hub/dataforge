@@ -1,5 +1,10 @@
 # Rime Evidence & Latency Benchmark Report
 
+> **🌐 Live Deployment**: [https://quickorder-2zjv.onrender.com/](https://quickorder-2zjv.onrender.com/)  
+> **🏆 Event**: DataForge 2026 Prototype Solution
+
+---
+
 ## 🎯 Claim Being Proven
 
 Streaming sentence-chunked Text-to-Speech (TTS) concurrently with LLM token streaming significantly reduces **Time-To-First-Audio (TTFA)** compared to the baseline approach (waiting for full LLM completion before initiating TTS). The latency reduction gap widens proportionally with the length and complexity of the response.
@@ -9,7 +14,7 @@ Streaming sentence-chunked Text-to-Speech (TTS) concurrently with LLM token stre
 ## 🧪 Acceptance Test Procedure
 
 1. Set valid `GEMINI_API_KEY` and `RIME_API_KEY` in environment variables or `.env`.
-2. Launch server using `npm start` and navigate to `http://localhost:5000` in Chrome.
+2. Launch server locally via `npm start` or access live at [https://quickorder-2zjv.onrender.com/](https://quickorder-2zjv.onrender.com/).
 3. Automated Playwright browser tests execute 3 consecutive runs in **Baseline** mode followed by 3 consecutive runs in **Optimized** mode using the multi-sentence stress test prompt:
    > *"Tell me your full menu and today's specials in detail, plus your allergen policy."*
 4. Screenshots captured after each run:

@@ -1,12 +1,23 @@
 # QuickOrder: Voice-Native Coffee Shop Ordering Assistant
 
+> **🌐 Live Web Application**: [https://quickorder-2zjv.onrender.com/](https://quickorder-2zjv.onrender.com/)  
+> **🏆 Event**: Developed as a prototype solution for **DataForge 2026**.
+
 QuickOrder is a voice-native ordering assistant designed to solve and measure one of the hardest challenges in conversational AI: **perceived response time / Time-To-First-Audio (TTFA)**.
+
+---
+
+## 🌐 Live Prototype & Deployment
+
+- **Live URL**: [https://quickorder-2zjv.onrender.com/](https://quickorder-2zjv.onrender.com/)
+- **Hackathon/Event**: Prototype developed for **DataForge 2026**.
+- **Live Health Endpoint**: `https://quickorder-2zjv.onrender.com/api/health`
 
 ---
 
 ## 🎯 Product, Target User, and Problem
 
-- **Product**: QuickOrder Voice Assistant (DataForge 2026 Prototype).
+- **Product**: QuickOrder Voice Assistant (DataForge 2026 Prototype Solution).
 - **Target User**: Coffee shop customers placing spoken orders, and voice AI engineers benchmarking real-time conversational streaming latency.
 - **Problem Solved**: Standard voice AI systems generate the entire LLM response before sending text to Text-to-Speech (TTS). For detailed responses, this creates a 2–5 second delay where the user hears uncomfortable silence. QuickOrder eliminates this delay by streaming LLM tokens, extracting complete sentences on the fly, and synthesizing TTS audio concurrently.
 
@@ -84,7 +95,7 @@ npm start
 The server will start listening at `http://localhost:5000`.
 
 ### 5. Accessing the Web App
-Open `http://localhost:5000` in Google Chrome. Use the **Hold to Speak** button or fallback text input field to submit an order.
+Open `http://localhost:5000` (or live at [https://quickorder-2zjv.onrender.com/](https://quickorder-2zjv.onrender.com/)) in Google Chrome. Use the **Hold to Speak** button or fallback text input field to submit an order.
 
 ---
 
@@ -93,7 +104,7 @@ Open `http://localhost:5000` in Google Chrome. Use the **Hold to Speak** button 
 1. Click the **Run Stress Test** button on the UI.
 2. The benchmark sends a long prompt (*"Tell me your full menu and today's specials in detail, plus your allergen policy"*) through **Baseline** and **Optimized** modes back-to-back.
 3. Observe the live TTFA comparison table and visual latency bar graphs.
-4. Verify backend server metrics at `GET http://localhost:5000/api/metrics`.
+4. Verify backend server metrics at `GET /api/metrics`.
 
 ---
 
@@ -118,6 +129,6 @@ Open `http://localhost:5000` in Google Chrome. Use the **Hold to Speak** button 
 
 ## 📜 Credits & License
 
-- Built for **DataForge 2026**.
+- Prototype solution developed for **DataForge 2026**.
 - Powered by Google Gemini (`@google/genai`), Rime TTS (`mistv2`), and Express.js.
 - License: MIT
