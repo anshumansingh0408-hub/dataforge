@@ -60,3 +60,5 @@ Everything in this experiment is live: Gemini generation, Rime synthesis, HTTP a
 - The server keeps metrics in memory and is intended for one concurrent experimenter.
 - Network conditions, provider load, browser buffering, and Gemini time-to-first-token all affect measured results.
 - This is a measurement demo, not a payment flow or telephony integration.
+
+- ##Made for DataForge 2026
