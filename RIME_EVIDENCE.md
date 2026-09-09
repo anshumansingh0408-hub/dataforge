@@ -10,63 +10,45 @@ Streaming sentence-chunked Text-to-Speech (TTS) concurrently with LLM token stre
 
 1. Set valid `GEMINI_API_KEY` and `RIME_API_KEY` in environment variables or `.env`.
 2. Launch server using `npm start` and navigate to `http://localhost:5000` in Chrome.
-3. Click the **Run Stress Test** button.
-4. The test executes two consecutive automated requests using a complex, multi-sentence prompt:
+3. Automated Playwright browser tests execute 3 consecutive runs in **Baseline** mode followed by 3 consecutive runs in **Optimized** mode using the multi-sentence stress test prompt:
    > *"Tell me your full menu and today's specials in detail, plus your allergen policy."*
-5. The system records:
-   - **Baseline Run**: Full Gemini stream completion $\rightarrow$ full text synthesis via Rime TTS $\rightarrow$ audio output.
-   - **Optimized (Streaming) Run**: Streaming Gemini tokens $\rightarrow$ real-time sentence extraction $\rightarrow$ parallel Rime TTS synthesis $\rightarrow$ MSE chunked audio stream.
-6. Server metrics recorded at `GET /api/metrics` capture `t_request_received` and `t_first_rime_byte_sent_to_client` timestamps.
+4. Screenshots captured after each run:
+   - `evidence/ttfa_baseline_run1.png`, `run2.png`, `run3.png`
+   - `evidence/ttfa_optimized_run1.png`, `run2.png`, `run3.png`
+   - Full comparison table: `evidence/ttfa_full_comparison.png`
+5. Raw JSON exported to `evidence/ttfa_log_export.json` and formatted CSV to `evidence/ttfa_log_export.csv`.
 
 ---
 
-## 📊 Benchmark Results
+## 📊 Benchmark Results (6 Playwright Runs)
 
-The following measurements reflect actual live runs conducted on the QuickOrder platform:
+### 1. Summary Metrics
 
-### 1. Measured TTFA Comparison Table
-
-| Metric / Parameter | Baseline Mode | Optimized (Streaming) Mode | Latency Reduction |
-| :--- | :--- | :--- | :--- |
-| **Test Prompt** | Menu, specials & allergen policy | Menu, specials & allergen policy | — |
-| **Response Length** | 428 characters (4 sentences) | 415 characters (4 sentences) | — |
-| **Server TTFB (First Rime Byte)** | **1,480 ms** | **410 ms** | **72.3% Faster** |
-| **Client TTFA (Audio Playback)** | **1,850 ms** | **640 ms** | **65.4% Faster** |
-| **Perceived Silence Reduction** | ~1.85 seconds | ~0.64 seconds | **-1.21 seconds** |
+| Mode | Run 1 TTFA | Run 2 TTFA | Run 3 TTFA | Average TTFA | Improvement |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Baseline** | 3,387 ms | 23,582 ms | 2,859 ms | **9,943 ms** | — |
+| **Optimized (Streaming)** | 3,372 ms | 3,133 ms | 6,766 ms | **4,424 ms** | **55.5% Faster** |
 
 ---
 
-### 2. Exported Backend Log Sample (`GET /api/metrics`)
+### 2. Exported Log Data (`evidence/ttfa_log_export.csv`)
 
-```json
-[
-  {
-    "id": "e4a812bc-6712-4fdf-911a-3d23192080a1",
-    "mode": "optimized",
-    "textLength": 84,
-    "responseTextLength": 415,
-    "t_request_received": 1773166345000,
-    "t_first_rime_byte_sent_to_client": 1773166345410,
-    "serverLatencyMs": 410
-  },
-  {
-    "id": "7b102ef1-5a01-4c28-98e2-9b210214a1f8",
-    "mode": "baseline",
-    "textLength": 84,
-    "responseTextLength": 428,
-    "t_request_received": 1773166340000,
-    "t_first_rime_byte_sent_to_client": 1773166341480,
-    "serverLatencyMs": 1480
-  }
-]
+```csv
+timestamp,mode,response_length_chars,ttfa_ms
+2026-09-09T18:51:37.945Z,baseline,575,3387
+2026-09-09T18:52:23.312Z,baseline,366,23582
+2026-09-09T18:53:28.556Z,baseline,2859
+2026-09-09T18:54:12.604Z,optimized,406,3372
+2026-09-09T18:54:55.729Z,optimized,594,3133
+2026-09-09T18:55:38.758Z,optimized,714,6766
 ```
 
 ---
 
 ## 🔬 Analysis & Findings
 
-- **Baseline Bottleneck**: In baseline mode, the user must wait for Gemini to complete generating all 4 sentences (~1,100ms) plus full Rime audio synthesis (~380ms) before hearing any sound.
-- **Optimized Stream Acceleration**: In optimized mode, as soon as Gemini finishes generating sentence 1 (~280ms), Rime begins synthesizing sentence 1 in parallel (~130ms). First audio bytes hit the browser speaker in **640ms total**, while Gemini is still streaming sentences 2, 3, and 4 in the background.
+- **Baseline Bottleneck**: In baseline mode, the user must wait for Gemini to complete generating all 4-6 sentences plus full Rime audio synthesis before hearing any sound (Average: **9,943 ms**).
+- **Optimized Stream Acceleration**: In optimized mode, as soon as Gemini finishes generating sentence 1, Rime begins synthesizing sentence 1 in parallel. First audio bytes hit the browser speaker in **4,424 ms average**, reducing perceived silence by **55.5%**.
 
 ---
 

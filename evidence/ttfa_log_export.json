@@ -1,0 +1,56 @@
+[
+  {
+    "id": "df239f3f-ee3b-4063-af2e-dd93f32615ea",
+    "mode": "optimized",
+    "textLength": 80,
+    "responseTextLength": 714,
+    "t_request_received": 1788980138758,
+    "t_first_rime_byte_sent_to_client": 1788980145524,
+    "firstAudioByteAt": 1788980145524
+  },
+  {
+    "id": "c906599e-49cc-4b4f-afb3-9dd2ce19a93f",
+    "mode": "optimized",
+    "textLength": 80,
+    "responseTextLength": 594,
+    "t_request_received": 1788980095729,
+    "t_first_rime_byte_sent_to_client": 1788980098862,
+    "firstAudioByteAt": 1788980098862
+  },
+  {
+    "id": "8455b2af-78b7-4c2e-bf9c-7edc9b1fb7a7",
+    "mode": "optimized",
+    "textLength": 80,
+    "responseTextLength": 406,
+    "t_request_received": 1788980052604,
+    "t_first_rime_byte_sent_to_client": 1788980055976,
+    "firstAudioByteAt": 1788980055976
+  },
+  {
+    "id": "190de995-939a-4c53-a4ee-f1676189d582",
+    "mode": "baseline",
+    "textLength": 80,
+    "responseTextLength": 619,
+    "t_request_received": 1788980008556,
+    "t_first_rime_byte_sent_to_client": 1788980011415,
+    "firstAudioByteAt": 1788980011415
+  },
+  {
+    "id": "09f27f91-f84f-40e9-975f-fa289e390b3a",
+    "mode": "baseline",
+    "textLength": 80,
+    "responseTextLength": 366,
+    "t_request_received": 1788979943312,
+    "t_first_rime_byte_sent_to_client": 1788979966894,
+    "firstAudioByteAt": 1788979966894
+  },
+  {
+    "id": "6de8f1d6-df3f-40e7-8ed2-4286ef2e3cd5",
+    "mode": "baseline",
+    "textLength": 80,
+    "responseTextLength": 575,
+    "t_request_received": 1788979897945,
+    "t_first_rime_byte_sent_to_client": 1788979901332,
+    "firstAudioByteAt": 1788979901332
+  }
+]
