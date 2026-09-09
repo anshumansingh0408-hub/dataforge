@@ -2,6 +2,10 @@ import express from "express";
 import crypto from "node:crypto";
 import { GoogleGenAI } from "@google/genai";
 
+try {
+  process.loadEnvFile();
+} catch {}
+
 const app = express();
 const PORT = Number(process.env.PORT || 5000);
 const HOST = "0.0.0.0";
@@ -42,7 +46,7 @@ async function geminiStream(text) {
 
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
   return ai.models.generateContentStream({
-    model: "gemini-2.5-flash",
+    model: "gemini-3.6-flash",
     contents: [{ role: "user", parts: [{ text }] }],
     config: {
       systemInstruction: SYSTEM_PROMPT,
