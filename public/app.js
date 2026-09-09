@@ -326,7 +326,7 @@ async function checkHealth() {
   try {
     const response = await fetch("/api/health", { cache: "no-store" });
     const health = await response.json();
-    const ready = health.providers.openai && health.providers.rime;
+    const ready = health.providers.gemini && health.providers.rime;
     els.healthDot.classList.toggle("ready", ready);
     els.healthLabel.textContent = ready ? "Voice stack ready" : "API keys needed";
   } catch {

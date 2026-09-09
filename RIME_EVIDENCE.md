@@ -6,7 +6,7 @@ Streaming sentence-chunked TTS reduces Time-To-First-Audio (TTFA) versus waiting
 
 ## Acceptance test procedure
 
-1. Add valid `OPENAI_API_KEY` and `RIME_API_KEY` values to Replit Secrets.
+1. Add valid `GEMINI_API_KEY` and `RIME_API_KEY` values to Replit Secrets.
 2. Open QuickOrder in Chrome.
 3. Click **Run stress test**.
 4. Wait for the Baseline and Optimized runs to finish.
@@ -25,4 +25,4 @@ Observed:
 
 ## Limitations
 
-Network variance, OpenAI time-to-first-token, sentence boundaries, provider queueing, browser buffering, and MediaSource support all contribute to the observed result. Optimized mode makes Rime requests concurrently, but preserves sentence order when writing audio bytes to the client.
+Network variance, Gemini time-to-first-token, sentence boundaries, provider queueing, browser buffering, and MediaSource support all contribute to the observed result. Optimized mode makes Rime requests concurrently, but preserves sentence order when writing audio bytes to the client.

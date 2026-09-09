@@ -1,5 +1,6 @@
 import express from "express";
 import crypto from "node:crypto";
+import { GoogleGenAI } from "@google/genai";
 
 const app = express();
 const PORT = Number(process.env.PORT || 5000);
@@ -34,58 +35,20 @@ function getProviderError(response, provider) {
     });
 }
 
-async function openAIStream(text) {
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error("OPENAI_API_KEY is not configured. Add it to Replit Secrets to enable ordering.");
+async function geminiStream(text) {
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY is not configured. Add it to Replit Secrets to enable ordering.");
   }
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      stream: true,
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  return ai.models.generateContentStream({
+    model: "gemini-2.5-flash",
+    contents: [{ role: "user", parts: [{ text }] }],
+    config: {
+      systemInstruction: SYSTEM_PROMPT,
       temperature: 0.4,
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: text },
-      ],
-    }),
+    },
   });
-
-  if (!response.ok) throw await getProviderError(response, "OpenAI");
-  return response;
-}
-
-async function* parseSSE(body) {
-  const decoder = new TextDecoder();
-  let buffer = "";
-
-  for await (const chunk of body) {
-    buffer += decoder.decode(chunk, { stream: true });
-    const events = buffer.split("\n\n");
-    buffer = events.pop() || "";
-
-    for (const event of events) {
-      const data = event
-        .split("\n")
-        .find((line) => line.startsWith("data:"))
-        ?.slice(5)
-        .trim();
-      if (!data || data === "[DONE]") continue;
-
-      try {
-        const parsed = JSON.parse(data);
-        const delta = parsed.choices?.[0]?.delta?.content;
-        if (delta) yield delta;
-      } catch {
-        // Ignore an incomplete or provider keep-alive event.
-      }
-    }
-  }
 }
 
 async function synthesize(text) {
@@ -146,11 +109,13 @@ function extractSentences(buffer) {
 }
 
 async function handleOrder({ text, mode, res, metric }) {
-  const llmResponse = await openAIStream(text);
+  const llmStream = await geminiStream(text);
   let responseText = "";
 
   if (mode === "baseline") {
-    for await (const token of parseSSE(llmResponse.body)) responseText += token;
+    for await (const chunk of llmStream) {
+      if (chunk.text) responseText += chunk.text;
+    }
     responseText = responseText.trim();
     metric.responseTextLength = responseText.length;
 
@@ -184,9 +149,10 @@ async function handleOrder({ text, mode, res, metric }) {
   };
 
   try {
-    for await (const token of parseSSE(llmResponse.body)) {
-      responseText += token;
-      sentenceBuffer += token;
+    for await (const chunk of llmStream) {
+      const textPiece = chunk.text || "";
+      responseText += textPiece;
+      sentenceBuffer += textPiece;
       const extracted = extractSentences(sentenceBuffer);
       sentenceBuffer = extracted.remainder;
       extracted.sentences.forEach(enqueueSentence);
@@ -219,11 +185,11 @@ app.post("/api/order", async (req, res) => {
     return;
   }
 
-  if (!process.env.OPENAI_API_KEY || !process.env.RIME_API_KEY) {
+  if (!process.env.GEMINI_API_KEY || !process.env.RIME_API_KEY) {
     res.status(503).json({
-      error: "QuickOrder needs both OPENAI_API_KEY and RIME_API_KEY in Replit Secrets before it can run.",
+      error: "QuickOrder needs both GEMINI_API_KEY and RIME_API_KEY in Replit Secrets before it can run.",
       missing: [
-        !process.env.OPENAI_API_KEY ? "OPENAI_API_KEY" : null,
+        !process.env.GEMINI_API_KEY ? "GEMINI_API_KEY" : null,
         !process.env.RIME_API_KEY ? "RIME_API_KEY" : null,
       ].filter(Boolean),
     });
@@ -252,7 +218,7 @@ app.get("/api/health", (_req, res) => {
   res.json({
     ok: true,
     providers: {
-      openai: Boolean(process.env.OPENAI_API_KEY),
+      gemini: Boolean(process.env.GEMINI_API_KEY),
       rime: Boolean(process.env.RIME_API_KEY),
     },
   });
