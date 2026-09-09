@@ -46,7 +46,7 @@ async function geminiStream(text) {
 
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
   return ai.models.generateContentStream({
-    model: "gemini-3.6-flash",
+    model: "gemini-3.5-flash-lite",
     contents: [{ role: "user", parts: [{ text }] }],
     config: {
       systemInstruction: SYSTEM_PROMPT,
