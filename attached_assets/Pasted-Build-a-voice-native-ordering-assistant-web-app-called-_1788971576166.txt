@@ -1,0 +1,63 @@
+Build a voice-native ordering assistant web app called "QuickOrder" in Node.js + Express (backend) with vanilla HTML/JS (frontend). No frameworks needed — keep it simple and fast to build.
+
+GOAL: Prove that streaming TTS sentence-by-sentence beats waiting for a full LLM response, by measuring Time-To-First-Audio (TTFA) in two modes.
+
+=== ARCHITECTURE ===
+
+FRONTEND (public/index.html + app.js):
+1. A "Hold to talk" button using the browser's built-in SpeechRecognition API (webkitSpeechRecognition) to capture the customer's spoken order and convert it to text. Show the live transcript as they speak.
+2. A mode toggle: "Baseline" vs "Optimized (streaming)".
+3. On release of the talk button (end of speech = t0, capture via performance.now()):
+   - Send the transcript + mode to POST /api/order on the backend.
+   - Receive back a stream of audio chunks (MIME type audio/mpeg) over the HTTP response body.
+   - Use the Fetch API with a ReadableStream reader, or MediaSource Extensions, to start playing audio as soon as the FIRST chunk arrives — do not wait for the full response to download.
+   - The instant audio actually starts playing (first `play` event / first buffer appended), record t1 = performance.now() and compute TTFA = t1 - t0.
+4. Show a running log table: [timestamp, mode, order text length, response text length, TTFA ms]. Also show a simple bar comparing average TTFA for Baseline vs Optimized.
+5. A "Run stress test" button that sends a long fixed prompt ("Tell me your full menu and today's specials in detail, plus your allergen policy") in both modes back-to-back and displays the TTFA comparison prominently.
+
+BACKEND (server.js, Express):
+1. POST /api/order — body: { text: string, mode: "baseline" | "optimized" }
+   - Call an LLM (use OpenAI's chat completions API with streaming enabled — model gpt-4o-mini is fine, fast and cheap) with a system prompt: "You are a friendly coffee shop counter assistant named QuickOrder. Confirm the customer's order, suggest one relevant add-on, and state the total wait time. Keep it conversational, 2-4 sentences unless asked for the full menu."
+   
+   IF mode === "baseline":
+     - Await the FULL LLM response text (don't stream to TTS yet).
+     - Make ONE call to Rime's TTS streaming HTTP endpoint (see Rime API below) with the full text.
+     - Pipe Rime's audio response directly through to the client response stream, chunked.
+
+   IF mode === "optimized":
+     - Stream tokens from the LLM as they arrive.
+     - Buffer tokens into a string; whenever the buffer contains a complete sentence (ends in . ! or ?), immediately fire a Rime TTS streaming HTTP request for JUST that sentence — don't wait for the rest of the LLM response.
+     - As each sentence's Rime request resolves (in order), pipe its audio bytes into the client's HTTP response stream, back-to-back, so the client hears one continuous stream — sentence 1's audio should start streaming to the client while sentence 2 is still being generated/synthesized.
+     - IMPORTANT: preserve sentence order in the output stream even though the Rime calls happen concurrently — use a simple ordered queue (e.g., an array of promises resolved in order, writing to the response in sequence).
+
+2. Log server-side: for each request, record t_request_received, t_first_rime_byte_sent_to_client, and mode, to an in-memory array. Expose GET /api/metrics returning this log as JSON (used to cross check client-measured TTFA).
+
+=== RIME TTS API (real, current — use exactly this) ===
+
+Endpoint: POST https://users.rime.ai/v1/rime-tts
+Headers:
+  Authorization: Bearer ${process.env.RIME_API_KEY}
+  Content-Type: application/json
+  Accept: audio/mpeg
+Body (JSON):
+{
+  "text": "<the sentence or full text to speak>",
+  "modelId": "mistv2",
+  "speaker": "astra",
+  "lang": "eng",
+  "samplingRate": 22050,
+  "speedAlpha": 1.0
+}
+Response: raw MP3 audio bytes, streamed as they're generated (do NOT buffer the whole thing server-side before forwarding — pipe the response stream directly to the client as bytes arrive, using response.body as a readable stream in Node, e.g. via undici/fetch with streaming, piped into Express's res object).
+
+Store RIME_API_KEY and OPENAI_API_KEY in Replit Secrets (never hardcode).
+
+=== FILES TO PRODUCE ===
+- server.js — Express app, both endpoints above
+- public/index.html — UI: talk button, mode toggle, transcript display, TTFA log table, stress test button
+- public/app.js — SpeechRecognition capture, fetch+stream playback, TTFA timing, log rendering
+- .env.example — RIME_API_KEY=your_key_here / OPENAI_API_KEY=your_key_here (placeholders only)
+- README.md — describe the product, the hard voice problem (perceived response time / TTFA), the acceptance test, how to run it, which Rime model/voice/endpoint/format is used (mistv2, astra, HTTP streaming, audio/mpeg), what's live vs simulated (everything here is live — no precomputed data), known limitations (browser SpeechRecognition is Chrome-only; single concurrent user; no telephony).
+- RIME_EVIDENCE.md — the claim ("streaming sentence-chunked TTS reduces TTFA vs waiting for the full response, and the gap widens with response length"), the acceptance test procedure (run stress test button, screenshot the TTFA log table), the result (fill in after testing — expect baseline TTFA to scale with full response length while optimized TTFA stays roughly constant near single-sentence synthesis time), and limitations (network variance, LLM time-to-first-token also contributes to optimized-mode latency).
+
+Keep the UI clean and functional, not fancy — the priority is that the latency measurement is real, visible, and reproducible with one click (the stress test button).

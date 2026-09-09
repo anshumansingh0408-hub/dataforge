@@ -1,0 +1,14 @@
+{
+  "name": "quickorder",
+  "version": "1.0.0",
+  "description": "A voice-native ordering assistant that measures streaming TTS latency.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}

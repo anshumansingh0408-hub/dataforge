@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0d1117" />
+    <title>QuickOrder — voice latency lab</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+    <main class="shell">
+      <header class="topbar">
+        <a class="brand" href="/">
+          <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+          <span>QuickOrder</span>
+        </a>
+        <div class="header-status">
+          <span class="status-dot" id="healthDot"></span>
+          <span id="healthLabel">Checking voice stack</span>
+          <span class="header-divider"></span>
+          <span class="mono">TTFA LAB / 01</span>
+        </div>
+      </header>
+
+      <section class="hero">
+        <div class="eyebrow"><span class="eyebrow-line"></span> Voice-native ordering assistant</div>
+        <h1>Hear the difference<br /><em>in real time.</em></h1>
+        <p class="hero-copy">Compare a full-response voice assistant with sentence-by-sentence streaming. One order, two latency paths, measured from release to first audio.</p>
+      </section>
+
+      <section class="workspace-grid">
+        <article class="panel order-panel">
+          <div class="panel-heading">
+            <div>
+              <span class="panel-kicker">01 / Place an order</span>
+              <h2>Talk to QuickOrder</h2>
+            </div>
+            <span class="live-badge"><span></span> LIVE</span>
+          </div>
+
+          <div class="mode-block">
+            <div class="field-label">Response mode</div>
+            <div class="mode-toggle" role="radiogroup" aria-label="Response mode">
+              <button class="mode-option active" data-mode="baseline" role="radio" aria-checked="true">
+                <span class="radio-dot"></span>
+                <span><strong>Baseline</strong><small>Wait for the full response</small></span>
+              </button>
+              <button class="mode-option" data-mode="optimized" role="radio" aria-checked="false">
+                <span class="radio-dot"></span>
+                <span><strong>Optimized</strong><small>Stream sentence by sentence</small></span>
+                <span class="recommended">FASTER</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="talk-zone">
+            <button class="talk-button" id="talkButton" aria-label="Hold to talk">
+              <span class="talk-rings"></span>
+              <span class="mic-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="8" y="3" width="8" height="12" rx="4" stroke="currentColor" stroke-width="1.7"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>
+              <span class="talk-label">Hold to talk</span>
+            </button>
+            <p class="talk-hint" id="talkHint">Press and hold, then release when you’re done</p>
+          </div>
+
+          <div class="transcript-card">
+            <div class="transcript-topline"><span>Live transcript</span><span class="recording-state" id="recordingState">READY</span></div>
+            <div class="transcript-text" id="transcript">Your order will appear here…</div>
+          </div>
+
+          <div class="manual-order">
+            <label class="field-label" for="manualText">Or type an order</label>
+            <div class="manual-row">
+              <input id="manualText" type="text" placeholder="A flat white and a blueberry muffin, please" autocomplete="off" />
+              <button class="send-button" id="sendButton">Send <span>↗</span></button>
+            </div>
+          </div>
+
+          <div class="panel-footnote"><span class="info-icon">i</span> Audio starts the instant the first playable bytes arrive. No precomputed responses.</div>
+        </article>
+
+        <aside class="panel insight-panel">
+          <div class="panel-heading">
+            <div>
+              <span class="panel-kicker">02 / Measure the gap</span>
+              <h2>Latency snapshot</h2>
+            </div>
+            <span class="unit-label">milliseconds</span>
+          </div>
+
+          <div class="metric-hero">
+            <div class="metric-label">Latest time to first audio</div>
+            <div class="metric-number" id="latestTtfa">—<span>ms</span></div>
+            <div class="metric-mode" id="latestMode">Run an order to begin</div>
+          </div>
+
+          <div class="comparison">
+            <div class="comparison-head"><span>Average TTFA</span><span class="mono">ALL RUNS</span></div>
+            <div class="bar-row">
+              <div class="bar-label"><span class="legend baseline-legend"></span> Baseline <strong id="baselineAverage">—</strong></div>
+              <div class="bar-track"><div class="bar-fill baseline-fill" id="baselineBar"></div></div>
+            </div>
+            <div class="bar-row">
+              <div class="bar-label"><span class="legend optimized-legend"></span> Optimized <strong id="optimizedAverage">—</strong></div>
+              <div class="bar-track"><div class="bar-fill optimized-fill" id="optimizedBar"></div></div>
+            </div>
+          </div>
+
+          <button class="stress-button" id="stressButton">
+            <span class="stress-icon">↯</span>
+            <span><strong>Run stress test</strong><small>Compare both modes on a long request</small></span>
+            <span class="arrow">→</span>
+          </button>
+          <div class="stress-result" id="stressResult" hidden></div>
+        </aside>
+      </section>
+
+      <section class="panel log-panel">
+        <div class="panel-heading log-heading">
+          <div>
+            <span class="panel-kicker">03 / Experiment log</span>
+            <h2>Every run, visible</h2>
+          </div>
+          <span class="run-count" id="runCount">0 runs</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Timestamp</th><th>Mode</th><th>Order length</th><th>Response length</th><th>TTFA</th></tr></thead>
+            <tbody id="logBody">
+              <tr class="empty-row"><td colspan="5"><span>No measurements yet.</span> Hold the button to start your first run.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <span>QuickOrder is a latency experiment, not a production checkout.</span>
+        <span class="footer-right">OPENAI → RIME <span class="footer-dot">·</span> audio/mpeg <span class="footer-dot">·</span> mistv2 / astra</span>
+      </footer>
+    </main>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="/app.js"></script>
+  </body>
+</html>
